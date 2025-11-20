@@ -1,0 +1,56 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://raw.githubusercontent.com/xiaoli-dong/taxflow/main/assets/schema_input.json",
+    "title": "xiaoli-dong/taxflow pipeline - params.input schema",
+    "description": "Schema for the file provided with params.input",
+    "type": "array",
+
+    "items": {
+        "type": "object",
+
+        "properties": {
+
+            "sample": {
+                "type": "string",
+                "pattern": "^\\S+$",
+                "errorMessage": "Sample name must be provided and cannot contain spaces",
+                "meta": ["id"]
+            },
+
+            "fastq_1": {
+                "type": "string",
+                "format": "file-path",
+                "exists": true,
+                "pattern": "^([\\S\\s]*\\/)?[^\\s\\/]+\\.(fastq|fq)(\\.gz)?$",
+                "errorMessage": "FastQ file for reads 1 must be provided, cannot contain spaces and must have extension '.fq', '.fq.gz', '.fastq', or '.fastq.gz'."
+            },
+
+            "fastq_2": {
+                "type": "string",
+                "format": "file-path",
+                "exists": true,
+                "pattern": "^([\\S\\s]*\\/)?[^\\s\\/]+\\.(fastq|fq)(\\.gz)?$",
+                "errorMessage": "FastQ file for reads 2 cannot contain spaces and must have extension '.fq', '.fq.gz', '.fastq', or '.fastq.gz'."
+            },
+
+            "fasta_contig": {
+                "type": "string",
+                "format": "file-path",
+                "exists": true,
+                "pattern": "^([\\S\\s]*\\/)?[^\\s\\/]+\\.(fna|fasta|fa)(\\.gz)?$",
+                "errorMessage": "Assembly file must be provided, cannot contain spaces and must have extension '.fa', 'fa.gz', '.fna', '.fna.gz', '.fasta', or '.fasta.gz'."
+            }
+        },
+
+        "required": ["sample"],
+
+        "anyOf": [
+            { "required": ["fastq_1"] },
+            { "required": ["fasta_contig"] }
+        ],
+
+        "errorMessage": {
+            "anyOf": "Each sample requires at least one of: fastq_1 (short reads) or fasta_contig (assembly)."
+        }
+    }
+}
