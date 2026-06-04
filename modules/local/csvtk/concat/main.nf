@@ -26,10 +26,11 @@ process CSVTK_CONCAT {
     def out_delimiter = out_format == "tsv" ? "\t" : (out_format == "csv" ? "," : out_format)
     out_extension = out_format == "tsv" ? 'tsv' : 'csv'
     """
-    cat $csv |csvtk concat $args \\
+    csvtk concat $args \\
         --num-cpus $task.cpus \\
         --delimiter "${delimiter}" \\
         --out-delimiter "${out_delimiter}" \\
+        $csv \\
         --out-file ${prefix}.${out_extension}
 
     cat <<-END_VERSIONS > versions.yml
