@@ -3,7 +3,6 @@
     IMPORT MODULES / SUBWORKFLOWS / FUNCTIONS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-
 include { paramsSummaryMap } from 'plugin/nf-schema'
 include { paramsSummaryMultiqc } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
@@ -11,11 +10,10 @@ include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_taxf
 include { GTDBTK_ANIREP } from '../modules/local/gtdbtk/anirep/main'
 include { BARRNAP } from '../modules/local/barrnap/barrnap/main'
 include { BARRNAP_SPLITFASTABYGFF } from '../modules/local/barrnap/splitfastabygff/main'
-
+include { SEQKIT_SEQ } from '../modules/nf-core/seqkit/seq/main'
 include { BLAST_BLASTN } from '../modules/nf-core/blast/blastn/main'
-include {
-    CSVTK_CONCAT as CSVTK_CONCAT_RRNA_BLAST;
-} from '../modules/local/csvtk/concat/main.nf'
+include { SSURRNA_GETTOPMATCHES } from '../modules/local/ssurrna/gettopmatches/main'
+include { CSVTK_CONCAT as CSVTK_CONCAT_TOPMATCHES;} from '../modules/local/csvtk/concat/main.nf'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -60,7 +58,9 @@ workflow CLASSIFYGENOMES {
                 BARRNAP.out.fasta.join(BARRNAP.out.gff)
 
             )
-        BARRNAP_SPLITFASTABYGFF.out.rrna_16S.filter { meta, fasta -> fasta.size() > 0 && fasta.countFasta() > 0 }.set { ch_16S_fasta }
+        SEQKIT_SEQ(BARRNAP_SPLITFASTABYGFF.out.rrna_16S)
+
+        SEQKIT_SEQ.out.fastx.filter { meta, fasta -> fasta.size() > 0 && fasta.countFasta() > 0 }.set { ch_16S_fasta }
 
         BLAST_BLASTN(
             ch_16S_fasta,
@@ -72,20 +72,24 @@ workflow CLASSIFYGENOMES {
         ch_versions = ch_versions.mix(BARRNAP_SPLITFASTABYGFF.out.versions)
         ch_versions = ch_versions.mix(BLAST_BLASTN.out.versions)
 
-        CSVTK_CONCAT_RRNA_BLAST(
+        SSURRNA_GETTOPMATCHES(
             BLAST_BLASTN.out.txt
+        )
+
+         CSVTK_CONCAT_TOPMATCHES(
+
+             SSURRNA_GETTOPMATCHES.out.top_matches
                 .map { meta, tsv -> tsv }
-                .flatten()
                 .collect()
                 .map { tsvs ->
-                    // Debug: print file paths
-                    tsvs.each { println "File: ${it}" }
-                    tuple([id: "contigs.barrnap_16S_rRNA.blastn_gtdb_ssu"], tsvs)
+                    tuple([id: "contigs.barrnap_16S_rRNA.blastn_gtdb_ssu.topmatches"], tsvs)
                 },
 
-            'tsv',
-            'tsv'
+                'tsv',
+                'tsv'
         )
+
+
     }
 
 
